@@ -1,0 +1,96 @@
+
+            html{
+                min-height:100%;
+            }
+            body {
+                background-image:-o-linear-gradient(top, #fff, #dcdcdc);
+                background-image:-moz-linear-gradient(top, #fff, #dcdcdc);
+                background-image:-webkit-linear-gradient(top, #fff, #dcdcdc);
+                background-image:linear-gradient(top, #fff, #dcdcdc);
+                padding-top: 50px;
+                padding-bottom: 20px;
+            } 
+            table{
+                border:0;
+                border-collapse:separate;
+                border-spacing:0px;
+
+                font:1em/1.4em Arial, sans-serif;
+            }
+            tr{
+                vertical-align: top;
+            }
+
+            tr:hover{
+                /* hello firefox */
+                box-shadow:3px 5px 6px -4px rgba(0,0,0,0.8);
+            }
+            /* webkit + opera */
+            td{
+                position:relative;
+            }
+            tr:hover td::before{
+                background-color:#e2f3ac;
+                background-image:-o-linear-gradient(90deg, rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.3));
+                background-image:-webkit-linear-gradient(90deg, rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.3));
+                background-image:linear-gradient(90deg, rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.3));
+
+                box-shadow:3px 5px 6px -4px rgba(0,0,0,0.8);
+
+                border-radius:5px;
+
+                display:block;
+                padding:0 9px 0 0;
+
+                content:'';
+                position:absolute;
+                left:0;
+                top:0;
+                z-index:-1;
+
+                width:100%;
+                height:100%;
+            }
+            
+            tr:hover td:last-child::before{
+                padding-right:0;
+            }
+
+            /* opera */
+            noindex:-o-prefocus, td::before{
+                border-radius:0 !important;
+            }
+
+            /* firefox */
+            tr:hover td, x:-moz-any-link{
+                background-color:#e2f3ac;
+                background-image:-moz-linear-gradient(90deg, rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.3));
+
+                position:static;
+            }
+            tr:hover td::before, x:-moz-any-link{
+                background:none;
+
+                display:none;
+                position:static;
+
+                padding:0;
+            }
+
+            td{
+                padding:10px 30px;
+            }
+            td:first-child{
+                padding-left:22px;
+            }
+            td:last-child{
+                text-align:right;
+            }
+
+            .note{
+                font-size:0.85em;
+                line-height:1.2em;
+
+                display:block;
+            }
+       

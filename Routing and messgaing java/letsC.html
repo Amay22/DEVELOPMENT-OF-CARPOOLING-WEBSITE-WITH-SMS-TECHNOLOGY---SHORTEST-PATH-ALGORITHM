@@ -1,0 +1,121 @@
+<html>
+<head>
+<title>Check</title>
+  
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
+
+<script type="text/javascript">
+
+ var oldpath;
+  var lastIndx=0;
+function gDirRequest(service, waypoints, userFunction, waypointIndex, path) {
+    // set defaults
+	
+    waypointIndex = typeof waypointIndex !== 'undefined' ? waypointIndex : 0;
+    path = typeof path !== 'undefined' ? path : [];
+
+    // get next set of waypoints
+    var s = gDirGetNextSet(waypoints, waypointIndex);
+    // build request object
+    var startl = s[0].shift()["location"];
+    var endl = s[0].pop()["location"];
+    var request = {
+        origin: startl,
+        destination: endl,
+        waypoints: s[0],
+        travelMode: google.maps.TravelMode.DRIVING,
+        unitSystem: google.maps.UnitSystem.METRIC,
+        optimizeWaypoints: true,
+        provideRouteAlternatives: false,
+        avoidHighways: false,
+        avoidTolls: false
+    };
+    service.route(request, function(response, status) {
+        
+        if (status == google.maps.DirectionsStatus.OK) {
+            path = path.concat(response.routes[0].overview_path);
+            oldpath = path
+            if (s[1] != null) {
+			    lastIndx = s[1]
+                gDirRequest(service, waypoints, userFunction, s[1], path)
+            } else {
+                userFunction(path);
+            }
+
+        } else {
+			path = oldpath;
+			lastIndx = lastIndx+1
+			if (s[lastIndx]!= null) {
+			gDirRequest(service, waypoints, userFunction,lastIndx , path)
+			}
+			else{
+			 userFunction(path);
+			}
+        }
+
+    });
+}
+
+function gDirGetNextSet (waypoints, startIndex) {
+    var MAX_WAYPOINTS_PER_REQUEST = 8;
+
+    var w = [];    // array of waypoints to return
+
+    if (startIndex > waypoints.length - 1) { return [w, null]; } // no more waypoints to process
+
+    var endIndex = startIndex + MAX_WAYPOINTS_PER_REQUEST;
+
+    // adjust waypoints, because Google allows us to include the start and destination latlongs for free!
+    endIndex += 2;
+
+    if (endIndex > waypoints.length - 1) { endIndex = waypoints.length ; }
+
+    for (var i = startIndex; i < endIndex; i++) {
+        w.push(waypoints[i]);
+    }
+
+    if (endIndex != waypoints.length) {
+        return [w, endIndex -= 1];
+    } else {
+        return [w, null];
+    }
+}
+
+function main(data) {
+
+    // initalise directions service
+    var directionsService = new google.maps.DirectionsService();
+	
+    var travelWaypoints = []
+	for (var i=0;i<=data.length-1;++i){
+	   travelWaypoints.push({location: new google.maps.LatLng(data[i][0],data[i][1])})
+	}
+
+    // get directions and draw on map
+    gDirRequest(directionsService, travelWaypoints, function drawGDirLine(path) {
+        var line = new google.maps.Polyline({clickable:false,map:map,path:path});
+    });
+}
+
+
+var map;
+  function initialize(data,mid_lat,mid_lon) {
+    var myOptions = {
+      zoom: 14,
+      center: new google.maps.LatLng(mid_lat,mid_lon),
+      mapTypeId: google.maps.MapTypeId.ROADMAP
+    };
+    
+    map = new google.maps.Map(document.getElementById('map_canvas'), myOptions);
+    
+    google.maps.event.addListenerOnce(map, 'idle', function(){
+        main(data);
+    });
+  }
+</script>
+</head>
+<body onload="initialize([[28.59, 77.315], [28.602561666666663, 77.31256166666667], [28.594639999999995, 77.30559166666667], [28.585825, 77.30017], [28.58475333333333, 77.30100333333333], [28.583985, 77.30347166666667], [28.584005, 77.30288], [28.584428333333335, 77.30269166666668], [28.584080000000004, 77.30304], [28.583235, 77.30358500000001], [28.584435, 77.30268333333333], [28.583306666666665, 77.30265666666666], [28.584278333333334, 77.30283833333333], [28.586365, 77.29805166666667], [28.583978333333334, 77.30177], [28.584324999999996, 77.30284166666667], [28.584238333333328, 77.30340666666666], [28.584101666666665, 77.30290666666666], [28.590111666666665, 77.30175666666668], [28.584323333333334, 77.30297333333333], [28.584215000000004, 77.30304666666666], [28.583788333333338, 77.30260666666666], [28.584193333333328, 77.303015], [28.583798333333334, 77.30157833333332], [28.584288333333333, 77.30296166666668], [28.583810000000003, 77.30295333333333], [28.583908333333337, 77.30201166666667], [28.58464333333333, 77.30217833333333], [28.584111666666665, 77.30134833333334], [28.587213333333338, 77.29757166666667], [28.58387, 77.29434666666666], [28.575966666666666, 77.28125833333334]],28.583978333333334, 77.30177)">
+<div id="map_canvas" style="float:left;width:70%;height:100%"></div>
+</div>
+</body>
+</html>

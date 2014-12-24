@@ -1,0 +1,183 @@
+<html>
+<head>
+<title>Check 18</title>
+  
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
+
+<script type="text/javascript">
+	var distance = 0;
+	var time = 0;
+	var stops = [{"Geometry":{"Latitude":28.602561666666663,"Longitude":77.315}},
+				{"Geometry":{"Latitude":28.594639999999995,"Longitude":77.31256166666667}},
+				{"Geometry":{"Latitude":28.58475333333333,"Longitude":77.30559166666667}},
+				{"Geometry":{"Latitude":28.585825,"Longitude":77.30017}},
+				{"Geometry":{"Latitude":28.58475333333333,"Longitude":77.30100333333333}},
+				
+				{"Geometry":{"Latitude":28.583985,"Longitude":77.30347166666667}},
+				{"Geometry":{"Latitude":28.584005,"Longitude":77.30288}},
+				{"Geometry":{"Latitude":28.584428333333335,"Longitude":77.30269166666668}},
+				{"Geometry":{"Latitude":28.584080000000004,"Longitude":77.30304}},
+				{"Geometry":{"Latitude":28.583235,"Longitude":77.30358500000001}},
+				
+				{"Geometry":{"Latitude":28.584435,"Longitude":77.30268333333333}},
+				
+				
+				{"Geometry":{"Latitude":28.583306666666665,"Longitude":77.30265666666666}},
+				{"Geometry":{"Latitude":28.584278333333334,"Longitude":77.30283833333333}},				
+				{"Geometry":{"Latitude":28.586365,"Longitude":77.29805166666667}},
+				{"Geometry":{"Latitude":28.583978333333334,"Longitude":77.30177}},
+				
+				{"Geometry":{"Latitude":28.584324999999996,"Longitude":77.30284166666667}},
+				{"Geometry":{"Latitude":28.584238333333328,"Longitude":77.30340666666666}},
+				{"Geometry":{"Latitude":28.584101666666665,"Longitude":77.30290666666666}},				
+				{"Geometry":{"Latitude":28.590111666666665,"Longitude":77.30175666666668}},
+				{"Geometry":{"Latitude":28.584323333333334,"Longitude":77.30297333333333}},
+				
+				{"Geometry":{"Latitude":28.584215000000004,"Longitude":77.30304666666666}},
+				{"Geometry":{"Latitude":28.583788333333338,"Longitude":77.30260666666666}},
+				{"Geometry":{"Latitude":28.584193333333328,"Longitude":77.303015}},
+				{"Geometry":{"Latitude":28.583798333333334,"Longitude":77.30157833333332}},
+				{"Geometry":{"Latitude":28.584288333333333,"Longitude":77.30296166666668}}
+															
+				] ;
+				
+	function initialize(){
+		var mapOptions = {
+            zoom: 13,
+            center: new window.google.maps.LatLng(28.583810000000003, 77.30295333333333), // default to London
+            mapTypeId: window.google.maps.MapTypeId.ROADMAP
+        };
+
+		var map = new window.google.maps.Map(document.getElementById("map-canvas"),mapOptions);
+	
+		// new up complex objects before passing them around
+		var directionsDisplay = new window.google.maps.DirectionsRenderer();
+		var directionsService = new window.google.maps.DirectionsService();
+		
+		directionsDisplay.setMap(map);
+		directionsDisplay.setPanel(document.getElementById('directionsPanel'));
+		
+		calcRoute(directionsService, directionsDisplay);		
+	}
+	
+	function calcRoute(directionsService, directionsDisplay) {
+		var batches = [];
+		var itemsPerBatch = 10; // google API max = 10 - 1 start, 1 stop, and 8 waypoints
+		var itemsCounter = 0;
+		var wayptsExist = stops.length > 0;
+
+		while (wayptsExist) {
+			var subBatch = [];
+			var subitemsCounter = 0;
+
+			for (var j = itemsCounter; j < stops.length; j++) {
+				subitemsCounter++;
+				subBatch.push({
+					location: new window.google.maps.LatLng(stops[j].Geometry.Latitude, stops[j].Geometry.Longitude),
+					stopover: true
+				});
+				if (subitemsCounter == itemsPerBatch)
+					break;
+			}
+
+			itemsCounter += subitemsCounter;
+			batches.push(subBatch);
+			wayptsExist = itemsCounter < stops.length;
+			// If it runs again there are still points. Minus 1 before continuing to 
+			// start up with end of previous tour leg
+			itemsCounter--;
+		}
+
+		// now we should have a 2 dimensional array with a list of a list of waypoints
+		var combinedResults;
+		var unsortedResults = [{}]; // to hold the counter and the results themselves as they come back, to later sort
+		var directionsResultsReturned = 0;
+
+		for (var k = 0; k < batches.length; k++) {
+			var lastIndex = batches[k].length - 1;
+			var start = batches[k][0].location;
+			var end = batches[k][lastIndex].location;
+
+			// trim first and last entry from array
+			var waypts = [];
+			waypts = batches[k];
+			waypts.splice(0, 1);
+			waypts.splice(waypts.length - 1, 1);
+
+			var request = {
+				origin: start,
+				destination: end,
+				waypoints: waypts,
+				travelMode: window.google.maps.TravelMode.DRIVING,				
+				optimizeWaypoints: true,
+				unitSystem: google.maps.DirectionsUnitSystem.METRIC
+			};
+			(function (kk) {
+				directionsService.route(request, function (result, status) {
+					if (status == window.google.maps.DirectionsStatus.OK) {
+
+						var unsortedResult = { order: kk, result: result };
+						unsortedResults.push(unsortedResult);
+						
+						directionsResultsReturned++;
+
+						if (directionsResultsReturned == batches.length) // we've received all the results. put to map
+						{
+							// sort the returned values into their correct order
+							unsortedResults.sort(function (a, b) { return parseFloat(a.order) - parseFloat(b.order); });
+							var count = 0;
+							for (var key in unsortedResults) {
+								if (unsortedResults[key].result != null) {
+									if (unsortedResults.hasOwnProperty(key)) {
+										if (count == 0) // first results. new up the combinedResults object
+											combinedResults = unsortedResults[key].result;
+										else {
+											// only building up legs, overview_path, and bounds in my consolidated object. This is not a complete 
+											// directionResults object, but enough to draw a path on the map, which is all I need											
+											combinedResults.routes[0].legs = combinedResults.routes[0].legs.concat(unsortedResults[key].result.routes[0].legs);
+											combinedResults.routes[0].overview_path = combinedResults.routes[0].overview_path.concat(unsortedResults[key].result.routes[0].overview_path);
+											combinedResults.routes[0].bounds = combinedResults.routes[0].bounds.extend(unsortedResults[key].result.routes[0].bounds.getNorthEast());
+											combinedResults.routes[0].bounds = combinedResults.routes[0].bounds.extend(unsortedResults[key].result.routes[0].bounds.getSouthWest());
+										}
+										count++;
+									}
+								}
+							}
+							calcDist(combinedResults);
+							directionsDisplay.setDirections(combinedResults);							
+						}
+					}
+				});
+			})(k);			
+		}			
+	}
+	function calcDist(response) {
+		var routes = response.routes;
+
+		// Loop through all routes and append
+		for(var rte in routes)
+		{
+			var legs = routes[rte].legs;
+			
+			for(var leg in legs)
+			{
+				var steps = legs[leg].steps;
+				// Compute overall distance and time for the trip.				
+				distance += legs[leg].distance.value;
+				
+				time += legs[leg].duration.value;
+			}
+		}
+		document.getElementById('p').innerHTML = 'The Total Distance  = ' + distance;
+		document.getElementById('p').innerHTML += '<BR>The Total Time      =  '+ time;
+	}
+
+</script>
+</head>
+<body onload="initialize()">
+<div id="map-canvas" style="float:left;width:70%;height:90%"></div>
+<div id="directionsPanel" style="float:right;width:30%; max-height:650px; overflow-y:scroll" ></div>
+<div id="p" style="float:left"></div>
+
+</body>
+</html>
